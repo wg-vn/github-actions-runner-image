@@ -34,6 +34,8 @@ cat > "$EVENT_FILE" <<EOF
 }
 EOF
 
+echo "Running 'act release' on `pwd`..."
+
 act release -j "$ACTION_NAME" \
   -e "$EVENT_FILE" \
   --env GITHUB_REF="refs/tags/${TAG}" \
