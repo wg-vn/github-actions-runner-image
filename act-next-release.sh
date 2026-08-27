@@ -21,6 +21,11 @@ if ! command -v git >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! command -v gh >/dev/null 2>&1; then
+  echo "Error: gh (GitHub CLI) is not installed." >&2
+  exit 1
+fi
+
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Error: not inside a git repository - run this from the target repo (e.g. vndash) so the latest tag can be extracted." >&2
   exit 1
@@ -41,4 +46,19 @@ GITHUB_REPOSITORY=$(echo "$ORIGIN_URL" | sed -E 's#^(git@github\.com:|https://gi
 echo "Latest tag:      ${LATEST_TAG}"
 echo "Next tag:        ${NEXT_TAG}"
 echo "GitHub repository: ${GITHUB_REPOSITORY}"
+
+if [ "$1" = "deploy" ]; then
+  git tag "${NEXT_TAG}"
+  git push origin "${NEXT_TAG}"
+  RELEASE_URL=$(gh release create "${NEXT_TAG}" --title "${NEXT_TAG}" --generate-notes --latest)
+
+  echo "Release ${NEXT_TAG} created and published as latest: ${RELEASE_URL}"
+
+  read -r -p "Run the deploy job now? [y/N] " CONFIRM
+  if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
+    echo "Aborted before running the deploy job."
+    exit 0
+  fi
+fi
+
 "$(dirname "$0")/act_release.sh" "${ACTION_NAME}" "${NEXT_TAG}" --env "GITHUB_REPOSITORY=${GITHUB_REPOSITORY}"
