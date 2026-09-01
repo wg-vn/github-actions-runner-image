@@ -1,16 +1,17 @@
 # github-actions-runner-image
 
-`catthehacker/ubuntu:act-latest` with `mysql-server` preinstalled, for running
-workflows locally with [act](https://github.com/wg-vn/github-actions-runner)
-that expect a GitHub-hosted `ubuntu-latest` runner's preinstalled MySQL
-service.
+`catthehacker/ubuntu:act-latest` with `mysql-server` and the `gh` CLI
+preinstalled, for running workflows locally with
+[act](https://github.com/wg-vn/github-actions-runner) that expect a
+GitHub-hosted `ubuntu-latest` runner's preinstalled MySQL service and GitHub
+CLI.
 
-`act`'s default images are deliberately minimal and don't include MySQL. This
-image adds it via `apt-get install mysql-server` on top of the same base, so
-workflow steps that manage it with `systemctl` (start/stop, tuning, etc.) work
-the same way they do on a real GitHub-hosted runner. Building on
-`catthehacker/ubuntu:act-latest` (Ubuntu 24.04) keeps it close to what
-`ubuntu-latest` actually looks like today.
+`act`'s default images are deliberately minimal and don't include MySQL or
+`gh`. This image adds them via `apt-get install mysql-server gh` on top of the
+same base, so workflow steps that manage MySQL with `systemctl` (start/stop,
+tuning, etc.) or call `gh` work the same way they do on a real GitHub-hosted
+runner. Building on `catthehacker/ubuntu:act-latest` (Ubuntu 24.04) keeps it
+close to what `ubuntu-latest` actually looks like today.
 
 `mysql-server`'s postinstall script initializes `/var/lib/mysql` and enables
 `mysql.service` at build time, but doesn't start it — the base image's
