@@ -1,13 +1,19 @@
 #!/bin/bash
 # Runs a job of deploy-production.yml locally with act, simulating a release
-# for the next tag in line (minor bump, e.g. v1.8.0 -> v1.9.0). See
+# for the next tag in line (minor bump, e.g. v1.8.0 -> v1.9.0), or for an
+# explicit tag if one is given (e.g. v1.20.1 for a patch release). See
 # act_release.sh for how the release event/GITHUB_REF are simulated.
 #
-# Usage: act-next-release.sh <build|deploy>
+# Usage: act-next-release.sh <build|deploy> [tag]
 set -euo pipefail
 
-if [ $# -ne 1 ] || { [ "$1" != "build" ] && [ "$1" != "deploy" ]; }; then
-  echo "Usage: $(basename "$0") <build|deploy>" >&2
+if [ $# -lt 1 ] || [ $# -gt 2 ] || { [ "$1" != "build" ] && [ "$1" != "deploy" ]; }; then
+  echo "Usage: $(basename "$0") <build|deploy> [tag]" >&2
+  exit 1
+fi
+
+if [ $# -eq 2 ] && ! [[ "$2" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "Error: tag must be in the form vMAJOR.MINOR.PATCH (e.g. v1.20.1), got '$2'." >&2
   exit 1
 fi
 
@@ -33,8 +39,12 @@ fi
 
 LATEST_TAG=$(git tag --sort=-v:refname | head -1)
 
-IFS='.' read -r MAJOR MINOR _ <<< "${LATEST_TAG#v}"
-NEXT_TAG="v${MAJOR}.$((MINOR + 1)).0"
+if [ $# -eq 2 ]; then
+  NEXT_TAG="$2"
+else
+  IFS='.' read -r MAJOR MINOR _ <<< "${LATEST_TAG#v}"
+  NEXT_TAG="v${MAJOR}.$((MINOR + 1)).0"
+fi
 
 # act doesn't read the local git remote, so github.repository defaults to its
 # own placeholder (nektos/act) unless GITHUB_REPOSITORY is passed in - without
