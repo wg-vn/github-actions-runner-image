@@ -60,9 +60,16 @@ echo "GitHub repository: ${GITHUB_REPOSITORY}"
 if [ "$1" = "deploy" ]; then
   git tag "${NEXT_TAG}"
   git push origin "${NEXT_TAG}"
-  RELEASE_URL=$(gh release create "${NEXT_TAG}" --title "${NEXT_TAG}" --generate-notes --latest)
+  # Only mark the release as latest if it's the newest version, so a patch
+  # to an older line (e.g. v1.19.1 after v1.20.0) doesn't take over "Latest".
+  if [ "$(printf '%s\n' "${LATEST_TAG}" "${NEXT_TAG}" | sort -V | tail -1)" = "${NEXT_TAG}" ]; then
+    IS_LATEST=true
+  else
+    IS_LATEST=false
+  fi
+  RELEASE_URL=$(gh release create "${NEXT_TAG}" --title "${NEXT_TAG}" --generate-notes --latest="${IS_LATEST}")
 
-  echo "Release ${NEXT_TAG} created and published as latest: ${RELEASE_URL}"
+  echo "Release ${NEXT_TAG} created (latest: ${IS_LATEST}): ${RELEASE_URL}"
 
   read -r -p "Run the deploy job now? [y/N] " CONFIRM
   if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
