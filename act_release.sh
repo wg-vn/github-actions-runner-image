@@ -24,15 +24,23 @@ shift 2
 EVENT_FILE=$(mktemp)
 trap 'rm -f "$EVENT_FILE"' EXIT
 
-cat > "$EVENT_FILE" <<EOF
+# Use the real release object when it exists, so steps reading html_url, body
+# or prerelease (e.g. the Google Chat notification) get the same values as on
+# GitHub. A build-only run can precede the release, so fall back to the tag.
+if ! gh api "repos/{owner}/{repo}/releases/tags/${TAG}" \
+  --jq '{action: "published", release: .}' > "$EVENT_FILE" 2>/dev/null; then
+  echo "No GitHub release for ${TAG} yet; simulating one with only tag_name/name." >&2
+  cat > "$EVENT_FILE" <<EOF
 {
   "action": "published",
   "release": {
     "tag_name": "${TAG}",
-    "name": "${TAG}"
+    "name": "${TAG}",
+    "prerelease": false
   }
 }
 EOF
+fi
 
 echo "Running 'act release' on `pwd`..."
 
