@@ -16,7 +16,8 @@ Microsoft signs its 26.04 package repo with `microsoft-2025.asc`.
 
 `act`'s default images are deliberately minimal and don't include MySQL or
 `gh`. This image adds them via `apt-get install mysql-server gh` (MySQL 8.4,
-the same Ubuntu package the GitHub-hosted 26.04 image ships), so workflow
+the same Ubuntu package the GitHub-hosted 26.04 image ships; `gh` from
+GitHub's own apt repo, since Ubuntu's lags far behind), so workflow
 steps that manage MySQL with `systemctl` (start/stop, tuning, etc.) or call
 `gh` work the same way they do on a real GitHub-hosted runner.
 
