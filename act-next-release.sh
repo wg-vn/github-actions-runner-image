@@ -37,6 +37,28 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   exit 1
 fi
 
+# act builds from the working tree, so anything besides a clean, up-to-date main
+# (another branch, uncommitted or untracked files) ends up in the release.
+PROBLEMS=()
+BRANCH=$(git symbolic-ref --short -q HEAD || echo "detached HEAD at $(git rev-parse --short HEAD)")
+[ "$BRANCH" = "main" ] || PROBLEMS+=("on '${BRANCH}', not main")
+[ -z "$(git status --porcelain)" ] || PROBLEMS+=("uncommitted or untracked files (git status)")
+if git fetch -q origin main; then
+  [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || PROBLEMS+=("HEAD differs from origin/main")
+else
+  PROBLEMS+=("could not fetch origin/main to compare")
+fi
+
+if [ ${#PROBLEMS[@]} -gt 0 ]; then
+  echo "WARNING: this checkout is not a pristine main:" >&2
+  printf '  - %s\n' "${PROBLEMS[@]}" >&2
+  read -r -p "Continue anyway? [y/N] " CONFIRM
+  if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
+    echo "Aborted."
+    exit 1
+  fi
+fi
+
 LATEST_TAG=$(git tag --sort=-v:refname | head -1)
 
 if [ $# -eq 2 ]; then
